@@ -1,0 +1,16 @@
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Show MCP wire traffic at DEBUG; change to INFO to reduce noise -->
+    <logger name="com.saddy.mcptest.client" level="DEBUG"/>
+    <!-- Test classes at INFO -->
+    <logger name="com.saddy.mcptest" level="INFO"/>
+
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

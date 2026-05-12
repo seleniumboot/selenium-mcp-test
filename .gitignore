@@ -1,0 +1,13 @@
+target/
+*.class
+*.jar
+*.war
+
+.idea/
+*.iml
+.vscode/
+*.project
+*.classpath
+.settings/
+
+test-output.txt
