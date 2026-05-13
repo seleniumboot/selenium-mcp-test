@@ -39,29 +39,30 @@ class AdvancedInteractionsTest extends BaseMcpTest {
     // ------------------------------------------------------------------ //
 
     @Test @Order(1)
-    @DisplayName("take_screenshot — response is valid base64-encoded PNG")
+    @DisplayName("take_screenshot — server returns ImageContent with valid PNG bytes")
     void screenshotIsValidPng() throws Exception {
         JsonNode result = mcp.callTool("take_screenshot", mcp.args());
         JsonNode content = result.path("content");
         assertTrue(content.isArray() && !content.isEmpty(), "Screenshot should return content");
 
-        String raw = content.get(0).path("text").asText();
-        log.info("Screenshot response prefix: {}", raw.substring(0, Math.min(40, raw.length())));
+        JsonNode item = content.get(0);
+        String type = item.path("type").asText();
+        log.info("Screenshot content type: {}", type);
 
-        // Server returns "screenshot:base64:<data>"
-        assertTrue(raw.startsWith("screenshot:base64:"),
-            "Expected 'screenshot:base64:' prefix, got: " + raw.substring(0, Math.min(50, raw.length())));
+        // Server now returns ImageContent(type="image", data=<b64>, mimeType="image/png")
+        assertEquals("image", type, "Expected ImageContent type='image', got: " + type);
+        assertEquals("image/png", item.path("mimeType").asText(), "Expected mimeType=image/png");
 
-        String b64 = raw.substring("screenshot:base64:".length());
-        assertFalse(b64.isBlank(), "Base64 payload should not be empty");
+        String b64 = item.path("data").asText();
+        assertFalse(b64.isBlank(), "Base64 data should not be empty");
 
         byte[] png = Base64.getDecoder().decode(b64);
-        // PNG magic bytes: 0x89 P N G \r \n 0x1a \n
+        // PNG magic bytes: 0x89 P N G
         assertEquals((byte) 0x89, png[0], "Byte 0 should be 0x89 (PNG magic)");
         assertEquals((byte) 'P',  png[1], "Byte 1 should be 'P'");
         assertEquals((byte) 'N',  png[2], "Byte 2 should be 'N'");
         assertEquals((byte) 'G',  png[3], "Byte 3 should be 'G'");
-        log.info("Screenshot verified: valid PNG, {} bytes", png.length);
+        log.info("Screenshot verified: ImageContent, valid PNG, {} bytes", png.length);
     }
 
     // ------------------------------------------------------------------ //
