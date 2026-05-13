@@ -1,12 +1,20 @@
 package com.saddy.mcptest.tests;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.saddy.mcptest.base.BaseMcpTest;
-import org.junit.jupiter.api.*;
-
 import java.util.Base64;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.AfterAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.saddy.mcptest.base.BaseMcpTest;
 
 /**
  * Covers the tools not exercised in ElementToolsTest:
