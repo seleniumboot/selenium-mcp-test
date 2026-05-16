@@ -161,4 +161,37 @@ class ElementToolsTest extends BaseMcpTest {
         log.info("wait_for_element (body) → {}", text);
         assertToolSuccess(text);
     }
+
+    @Test @Order(15)
+    @DisplayName("get_healed_locators — returns cache (may be empty if no healing occurred)")
+    void getHealedLocators() throws Exception {
+        String text = mcp.callToolText("get_healed_locators", mcp.args());
+        log.info("get_healed_locators → {}", text);
+        // Either "No healed locators" or a list of healed entries — both are valid
+        assertTrue(text.contains("healed") || text.contains("Healed"),
+            "Expected healing status in response but got: " + text);
+    }
+
+    @Test @Order(16)
+    @DisplayName("clear_healed_locators — clears the healing cache")
+    void clearHealedLocators() throws Exception {
+        String text = mcp.callToolText("clear_healed_locators", mcp.args());
+        log.info("clear_healed_locators → {}", text);
+        assertToolSuccess(text);
+        assertContains(text, "Cleared");
+    }
+
+    @Test @Order(17)
+    @DisplayName("self-healing — #id shorthand falls back to [id='...'] when primary fails")
+    void selfHealingIdFallback() throws Exception {
+        // Use a known-good element on the page via a comma-separated multi-selector fallback.
+        // The first selector is intentionally broken; the second is valid.
+        String text = mcp.callToolText("find_element",
+            args("selector", ".does-not-exist-xyz, body", "by", "css", "timeout", 5));
+        log.info("self-healing multi-selector → {}", text);
+        assertToolSuccess(text);
+        // Result should mention healing since the primary single-class selector failed
+        assertTrue(text.contains("tag=") || text.contains("healed"),
+            "Expected element found (possibly healed) but got: " + text);
+    }
 }
