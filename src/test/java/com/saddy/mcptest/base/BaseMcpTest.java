@@ -23,17 +23,12 @@ public abstract class BaseMcpTest {
 
     protected static final String BASE_URL = "https://panjatan.netlify.app";
 
-    private static final String PYTHON_CMD =
-        System.getProperty("mcp.python.cmd", "python");
-    private static final String SERVER_PATH =
-        System.getProperty("mcp.server.path", "g:\\saas_apps\\selenium-mcp\\src\\server.py");
-
     protected McpStdioClient mcp;
 
     @BeforeAll
     void startMcpServer() throws Exception {
-        log.info("Starting MCP server: {} {}", PYTHON_CMD, SERVER_PATH);
-        mcp = new McpStdioClient(PYTHON_CMD, SERVER_PATH);
+        log.info("Starting MCP server: python -m selenium_mcp.server");
+        mcp = new McpStdioClient("python", "-m", "selenium_mcp.server");
     }
 
     @AfterAll

@@ -32,16 +32,25 @@ public class McpStdioClient implements Closeable {
     });
 
     /**
+     * Start the MCP server using an arbitrary command array
+     * e.g. new McpStdioClient("python", "-m", "selenium_mcp.server")
+     *   or new McpStdioClient("seleniumboot-mcp")
+     */
+    public McpStdioClient(String... command) throws Exception {
+        this(new ProcessBuilder(command));
+    }
+
+    /**
      * Start the MCP server at the given path using the given Python command.
-     *
-     * @param pythonCmd  Python executable (e.g. "python", "python3", "py")
-     * @param serverPath Absolute path to server.py
+     * The working directory is set to the parent of serverPath's parent so that
+     * package-based imports (e.g. selenium_mcp.tools.*) resolve correctly.
      */
     public McpStdioClient(String pythonCmd, String serverPath) throws Exception {
-        Path srcDir = Path.of(serverPath).getParent();
+        this(new ProcessBuilder(pythonCmd, serverPath)
+                .directory(Path.of(serverPath).getParent().getParent().toFile()));
+    }
 
-        ProcessBuilder pb = new ProcessBuilder(pythonCmd, serverPath);
-        pb.directory(srcDir.toFile());
+    private McpStdioClient(ProcessBuilder pb) throws Exception {
         pb.environment().put("PYTHONUNBUFFERED", "1");
 
         process = pb.start();
@@ -50,7 +59,6 @@ public class McpStdioClient implements Closeable {
         startStderrDrain();
         readerThread.submit(() -> readLoop(process.getInputStream()));
 
-        // Give the server a moment to initialize its event loop before handshake
         Thread.sleep(800);
         handshake();
     }

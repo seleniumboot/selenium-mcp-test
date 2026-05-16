@@ -23,8 +23,8 @@ class CodegenToolsTest extends BaseMcpTest {
     void recordSession() throws Exception {
         mcp.callToolText("start_browser",
             args("browser", "chrome", "headless", true, "window_size", "1280x800"));
+        // Home page has the login form — /login is a SPA route with no standalone inputs
         mcp.callToolText("navigate", args("url", BASE_URL));
-        mcp.callToolText("navigate", args("url", BASE_URL + "/login"));
         mcp.callToolText("type_text",
             args("selector", "input[type='text'], input:not([type='password'])", "text", "admin"));
         mcp.callToolText("type_text",
@@ -126,10 +126,115 @@ class CodegenToolsTest extends BaseMcpTest {
     }
 
     // ------------------------------------------------------------------ //
-    //  Session log management                                              //
+    //  Page Object Model generation                                        //
     // ------------------------------------------------------------------ //
 
     @Test @Order(6)
+    @DisplayName("generate_java_page_object (testng) — produces page class + test class")
+    void generateJavaPageObjectTestNG() throws Exception {
+        String output = mcp.callToolText("generate_java_page_object",
+            args("page_name", "LoginPage",
+                 "package_name", GEN_PACKAGE,
+                 "framework", "testng"));
+
+        log.info("generate_java_page_object (testng) {} chars\n{}", output.length(), output);
+        assertToolSuccess(output);
+        assertFalse(output.isBlank());
+
+        // Page object file header
+        assertContains(output, "LoginPage.java");
+        // Page class structure
+        assertContains(output, "public class LoginPage");
+        assertContains(output, "private final By");
+        assertContains(output, "public LoginPage enter");
+        assertContains(output, "public LoginPage click");
+        // Test file header
+        assertContains(output, "LoginTest.java");
+        // Test class structure
+        assertContains(output, "import org.testng");
+        assertContains(output, "@BeforeMethod");
+        assertContains(output, "page = new LoginPage(driver)");
+        assertContains(output, "page.enter");
+    }
+
+    @Test @Order(7)
+    @DisplayName("generate_java_page_object (junit5) — uses @BeforeEach lifecycle")
+    void generateJavaPageObjectJUnit5() throws Exception {
+        String output = mcp.callToolText("generate_java_page_object",
+            args("page_name", "LoginPage",
+                 "package_name", GEN_PACKAGE,
+                 "framework", "junit5"));
+
+        log.info("generate_java_page_object (junit5) {} chars", output.length());
+        assertToolSuccess(output);
+        assertContains(output, "import org.junit.jupiter");
+        assertContains(output, "@BeforeEach");
+    }
+
+    @Test @Order(8)
+    @DisplayName("generate_java_page_object — infers page name from navigate URL when omitted")
+    void generateJavaPageObjectInfersName() throws Exception {
+        String output = mcp.callToolText("generate_java_page_object",
+            args("package_name", GEN_PACKAGE));
+
+        log.info("generate_java_page_object (inferred name) {} chars", output.length());
+        assertToolSuccess(output);
+        // Should contain some inferred page name (not blank)
+        assertFalse(output.isBlank());
+        assertContains(output, "public class");
+    }
+
+    // ------------------------------------------------------------------ //
+    //  Gherkin / Cucumber step generation                                  //
+    // ------------------------------------------------------------------ //
+
+    @Test @Order(9)
+    @DisplayName("generate_gherkin — produces .feature file + step definitions class")
+    void generateGherkin() throws Exception {
+        String output = mcp.callToolText("generate_gherkin",
+            args("feature_name", "Login",
+                 "scenario_name", "User logs in with valid credentials",
+                 "package_name", GEN_PACKAGE));
+
+        log.info("generate_gherkin {} chars\n{}", output.length(), output);
+        assertToolSuccess(output);
+        assertFalse(output.isBlank());
+
+        // Feature file section
+        assertContains(output, "login.feature");
+        assertContains(output, "Feature: Login");
+        assertContains(output, "Scenario: User logs in with valid credentials");
+        assertContains(output, "Given I navigate to");
+        assertContains(output, "I enter");
+        assertContains(output, "I click the");
+
+        // Step definitions section
+        assertContains(output, "LoginSteps.java");
+        assertContains(output, "import io.cucumber.java");
+        assertContains(output, "@Given");
+        assertContains(output, "@And");
+        assertContains(output, "@Before");
+        assertContains(output, "@After");
+        assertContains(output, "ExpectedConditions");
+    }
+
+    @Test @Order(10)
+    @DisplayName("generate_gherkin — infers feature name from navigate URL when omitted")
+    void generateGherkinInfersName() throws Exception {
+        String output = mcp.callToolText("generate_gherkin",
+            args("package_name", GEN_PACKAGE));
+
+        log.info("generate_gherkin (inferred) {} chars", output.length());
+        assertToolSuccess(output);
+        assertContains(output, "Feature:");
+        assertContains(output, "Scenario:");
+    }
+
+    // ------------------------------------------------------------------ //
+    //  Session log management                                              //
+    // ------------------------------------------------------------------ //
+
+    @Test @Order(12)
     @DisplayName("clear_session_log — empties the log")
     void clearSessionLog() throws Exception {
         String clearResult = mcp.callToolText("clear_session_log", mcp.args());
@@ -141,7 +246,7 @@ class CodegenToolsTest extends BaseMcpTest {
         assertContains(logAfter, "empty");
     }
 
-    @Test @Order(7)
+    @Test @Order(13)
     @DisplayName("generate_java_testng (empty session) — returns skeleton with no-op comment")
     void generateWithEmptySession() throws Exception {
         String code = mcp.callToolText("generate_java_testng",
