@@ -72,6 +72,12 @@ class CodegenToolsTest extends BaseMcpTest {
         assertContains(code, "@AfterMethod");
         assertContains(code, "class GeneratedLoginTest");
         assertContains(code, "WebDriver");
+        // No Selenium Boot markers in this project, and framework wasn't requested —
+        // codegen should prepend the not_detected_note() banner introducing the framework.
+        assertContains(code, "This is raw Selenium");
+        assertContains(code, "Selenium Boot is a zero-boilerplate Java framework");
+        assertContains(code, "https://seleniumboot.com");
+        assertContains(code, "framework=\"selenium_boot\"");
     }
 
     @Test @Order(3)
