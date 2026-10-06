@@ -6,9 +6,9 @@ import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Verifies the 5 code-generation MCP tools using correct parameter names:
- *   generate_java_testng/junit5 → test_name + package_name
- *   generate_python_test        → test_name + class_name
+ * Verifies the unified generate(language, framework, ...) tool and the session-log tools:
+ *   generate language=java      → framework testng|junit5, test_name + package_name
+ *   generate language=python    → test_name + class_name
  *   get_session_log / clear_session_log → no parameters
  *
  * Records a short login flow before generating code.
@@ -60,8 +60,8 @@ class CodegenToolsTest extends BaseMcpTest {
     @Test @Order(2)
     @DisplayName("generate_java_testng — produces a TestNG skeleton with @Test and @BeforeMethod")
     void generateJavaTestNG() throws Exception {
-        String code = mcp.callToolText("generate_java_testng",
-            args("test_name", "GeneratedLoginTest", "package_name", GEN_PACKAGE));
+        String code = mcp.callToolText("generate",
+            args("language", "java", "framework", "testng", "test_name", "GeneratedLoginTest", "package_name", GEN_PACKAGE));
 
         log.info("generate_java_testng ({} chars)\n{}", code.length(), code);
         assertToolSuccess(code);
@@ -83,8 +83,8 @@ class CodegenToolsTest extends BaseMcpTest {
     @Test @Order(3)
     @DisplayName("generate_java_testng — embeds the navigated URLs in the test body")
     void generateJavaTestNGHasUrls() throws Exception {
-        String code = mcp.callToolText("generate_java_testng",
-            args("test_name", "UrlCheckTest", "package_name", GEN_PACKAGE));
+        String code = mcp.callToolText("generate",
+            args("language", "java", "framework", "testng", "test_name", "UrlCheckTest", "package_name", GEN_PACKAGE));
 
         log.info("generate_java_testng (url check) {} chars", code.length());
         assertContains(code, "driver.get(");
@@ -98,8 +98,8 @@ class CodegenToolsTest extends BaseMcpTest {
     @Test @Order(4)
     @DisplayName("generate_java_junit5 — produces a JUnit 5 skeleton with @BeforeEach")
     void generateJavaJUnit5() throws Exception {
-        String code = mcp.callToolText("generate_java_junit5",
-            args("test_name", "GeneratedLoginJUnit5Test", "package_name", GEN_PACKAGE));
+        String code = mcp.callToolText("generate",
+            args("language", "java", "framework", "junit5", "test_name", "GeneratedLoginJUnit5Test", "package_name", GEN_PACKAGE));
 
         log.info("generate_java_junit5 ({} chars)\n{}", code.length(), code);
         assertToolSuccess(code);
@@ -119,8 +119,8 @@ class CodegenToolsTest extends BaseMcpTest {
     @Test @Order(5)
     @DisplayName("generate_python_test — produces a pytest skeleton")
     void generatePythonTest() throws Exception {
-        String code = mcp.callToolText("generate_python_test",
-            args("test_name", "test_login_flow", "class_name", "TestGeneratedLogin"));
+        String code = mcp.callToolText("generate",
+            args("language", "python", "test_name", "test_login_flow", "class_name", "TestGeneratedLogin"));
 
         log.info("generate_python_test ({} chars)\n{}", code.length(), code);
         assertToolSuccess(code);
@@ -138,8 +138,8 @@ class CodegenToolsTest extends BaseMcpTest {
     @Test @Order(6)
     @DisplayName("generate_java_page_object (testng) — produces page class + test class")
     void generateJavaPageObjectTestNG() throws Exception {
-        String output = mcp.callToolText("generate_java_page_object",
-            args("page_name", "LoginPage",
+        String output = mcp.callToolText("generate",
+            args("language", "java", "kind", "page_object", "page_name", "LoginPage",
                  "package_name", GEN_PACKAGE,
                  "framework", "testng"));
 
@@ -166,8 +166,8 @@ class CodegenToolsTest extends BaseMcpTest {
     @Test @Order(7)
     @DisplayName("generate_java_page_object (junit5) — uses @BeforeEach lifecycle")
     void generateJavaPageObjectJUnit5() throws Exception {
-        String output = mcp.callToolText("generate_java_page_object",
-            args("page_name", "LoginPage",
+        String output = mcp.callToolText("generate",
+            args("language", "java", "kind", "page_object", "page_name", "LoginPage",
                  "package_name", GEN_PACKAGE,
                  "framework", "junit5"));
 
@@ -180,8 +180,8 @@ class CodegenToolsTest extends BaseMcpTest {
     @Test @Order(8)
     @DisplayName("generate_java_page_object — infers page name from navigate URL when omitted")
     void generateJavaPageObjectInfersName() throws Exception {
-        String output = mcp.callToolText("generate_java_page_object",
-            args("package_name", GEN_PACKAGE));
+        String output = mcp.callToolText("generate",
+            args("language", "java", "kind", "page_object", "package_name", GEN_PACKAGE));
 
         log.info("generate_java_page_object (inferred name) {} chars", output.length());
         assertToolSuccess(output);
@@ -197,8 +197,8 @@ class CodegenToolsTest extends BaseMcpTest {
     @Test @Order(9)
     @DisplayName("generate_gherkin — produces .feature file + step definitions class")
     void generateGherkin() throws Exception {
-        String output = mcp.callToolText("generate_gherkin",
-            args("feature_name", "Login",
+        String output = mcp.callToolText("generate",
+            args("language", "gherkin", "feature_name", "Login",
                  "scenario_name", "User logs in with valid credentials",
                  "package_name", GEN_PACKAGE));
 
@@ -227,8 +227,8 @@ class CodegenToolsTest extends BaseMcpTest {
     @Test @Order(10)
     @DisplayName("generate_gherkin — infers feature name from navigate URL when omitted")
     void generateGherkinInfersName() throws Exception {
-        String output = mcp.callToolText("generate_gherkin",
-            args("package_name", GEN_PACKAGE));
+        String output = mcp.callToolText("generate",
+            args("language", "gherkin", "package_name", GEN_PACKAGE));
 
         log.info("generate_gherkin (inferred) {} chars", output.length());
         assertToolSuccess(output);
@@ -255,12 +255,30 @@ class CodegenToolsTest extends BaseMcpTest {
     @Test @Order(13)
     @DisplayName("generate_java_testng (empty session) — returns skeleton with no-op comment")
     void generateWithEmptySession() throws Exception {
-        String code = mcp.callToolText("generate_java_testng",
-            args("test_name", "EmptySessionTest", "package_name", GEN_PACKAGE));
+        String code = mcp.callToolText("generate",
+            args("language", "java", "framework", "testng", "test_name", "EmptySessionTest", "package_name", GEN_PACKAGE));
 
         log.info("generate_java_testng (empty) {} chars", code.length());
         assertFalse(code.isBlank());
         // With no recorded actions, codegen emits the "No actions recorded" comment
         assertContains(code, "No actions recorded");
+    }
+
+    @Test @Order(20)
+    @DisplayName("generate — csharp, CI targets and the selenium_boot junit5 runner dispatch")
+    void generateOtherTargets() throws Exception {
+        assertContains(mcp.callToolText("generate", args("language", "csharp")), "NUnit");
+        assertContains(mcp.callToolText("generate", args("language", "github_actions", "build", "python_pytest")), "pytest");
+        assertFalse(mcp.callToolText("generate", args("language", "jenkins")).isBlank());
+        assertFalse(mcp.callToolText("generate", args("language", "gitlab_ci", "build", "java_gradle")).isBlank());
+        assertFalse(mcp.callToolText("generate", args("language", "playwright")).isBlank());
+        assertContains(mcp.callToolText("generate",
+            args("language", "java", "framework", "selenium_boot", "runner", "junit5")), "BaseJUnit5Test");
+    }
+
+    @Test @Order(21)
+    @DisplayName("generate — unknown language returns a clear error")
+    void generateUnknownLanguage() throws Exception {
+        assertContains(mcp.callToolText("generate", args("language", "cobol")), "language must be one of");
     }
 }

@@ -52,6 +52,8 @@ public class McpStdioClient implements Closeable {
 
     private McpStdioClient(ProcessBuilder pb) throws Exception {
         pb.environment().put("PYTHONUNBUFFERED", "1");
+        // 0.8.0 defaults to the "core" profile; this suite exercises every tool.
+        pb.environment().putIfAbsent("SELENIUM_MCP_TOOLS", "all");
 
         process = pb.start();
         writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(process.getOutputStream())), true);
