@@ -190,6 +190,24 @@ class CodegenToolsTest extends BaseMcpTest {
         assertContains(output, "public class");
     }
 
+    @Test @Order(11)
+    @DisplayName("generate_java_page_object — test_name names the test class, page_name only the page")
+    void generateJavaPageObjectHonoursTestName() throws Exception {
+        for (String framework : new String[] {"testng", "selenium_boot"}) {
+            String output = mcp.callToolText("generate",
+                args("language", "java", "kind", "page_object", "page_name", "LoginPage",
+                     "test_name", "CheckoutSmokeTest", "package_name", GEN_PACKAGE,
+                     "framework", framework));
+
+            assertToolSuccess(output);
+            assertContains(output, "public class LoginPage");
+            assertContains(output, "tests/CheckoutSmokeTest.java");
+            assertContains(output, "public class CheckoutSmokeTest");
+            assertFalse(output.contains("public class LoginTest"),
+                framework + ": test class still named after the page: " + output);
+        }
+    }
+
     // ------------------------------------------------------------------ //
     //  Gherkin / Cucumber step generation                                  //
     // ------------------------------------------------------------------ //
