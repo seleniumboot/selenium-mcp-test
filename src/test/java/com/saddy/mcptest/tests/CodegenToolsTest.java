@@ -286,7 +286,11 @@ class CodegenToolsTest extends BaseMcpTest {
     @DisplayName("generate — csharp, CI targets and the selenium_boot junit5 runner dispatch")
     void generateOtherTargets() throws Exception {
         assertContains(mcp.callToolText("generate", args("language", "csharp")), "NUnit");
-        assertContains(mcp.callToolText("generate", args("language", "github_actions", "build", "python_pytest")), "pytest");
+        String gha = mcp.callToolText("generate", args("language", "github_actions", "build", "python_pytest"));
+        assertContains(gha, "pytest");
+        // The test step must be a single list item, not a nested "- - name:" list GitHub Actions rejects
+        assertFalse(gha.contains("- - name"), "github_actions emitted a nested list step:\n" + gha);
+        assertContains(gha, "      - name: Run Selenium tests\n        run: pytest");
         assertFalse(mcp.callToolText("generate", args("language", "jenkins")).isBlank());
         assertFalse(mcp.callToolText("generate", args("language", "gitlab_ci", "build", "java_gradle")).isBlank());
         assertFalse(mcp.callToolText("generate", args("language", "playwright")).isBlank());
